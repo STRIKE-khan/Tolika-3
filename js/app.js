@@ -10,16 +10,34 @@ import { $, $$, el, showToast, debounce } from './utils.js';
 let allTools = [];
 
 async function loadToolModules() {
-  const modules = await Promise.all([
-    import('./tools/imageTools.js'),
-    import('./tools/textTools.js'),
-    import('./tools/devTools.js'),
-    import('./tools/mathTools.js'),
-    import('./tools/fileTools.js'),
-    import('./tools/videoTools.js'),
-    import('./tools/audioTools.js'),
-  ]);
-  allTools = modules.flatMap(m => m.default);
+  const modulePaths = [
+    './tools/imageTools.js',
+    './tools/textTools.js',
+    './tools/devTools.js',
+    './tools/mathTools.js',
+    './tools/fileTools.js',
+    './tools/videoTools.js',
+    './tools/audioTools.js',
+  ];
+  
+  const toolsList = [];
+  for (const path of modulePaths) {
+    try {
+      const m = await import(path);
+      if (m && m.default) {
+        toolsList.push(...m.default);
+      } else {
+        console.warn(`Module ${path} does not export a default array.`);
+      }
+    } catch (err) {
+      console.error(`Error loading module ${path}:`, err);
+      // Alert/toast to help user debug the specific syntax/reference error
+      setTimeout(() => {
+        showToast(`Failed to load ${path.split('/').pop()}: ${err.message}`, 'error', 10000);
+      }, 500);
+    }
+  }
+  allTools = toolsList;
   return allTools;
 }
 
